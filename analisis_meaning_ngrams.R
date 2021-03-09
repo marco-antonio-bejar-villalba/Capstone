@@ -25,12 +25,8 @@ vocab[[1]][221:225]
 
 iter <- itoken(tokens)
 vectorizer <- vocab_vectorizer(vocab)
-tcm <- create_tcm(iter, vectorizer)
+tcm <- create_tcm(iter, vectorizer, skip_grams_window = 5L)
 
-fit.glove <- glove(tcm = tcm,
-                   word_vectors_size = 50,
-                   x_max = 10, learning_rate = 0.2,
-                   num_iters = 15)
 
 glove = GlobalVectors$new(rank = 50, x_max = 10)
-glove$fit(tcm, n_iter = 20)
+glove$fit_transform(tcm, n_iter=20)

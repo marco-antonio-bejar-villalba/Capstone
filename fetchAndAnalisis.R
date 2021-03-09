@@ -1,5 +1,12 @@
+options(encoding = "UTF-8")
+
 library(tm)
 library(SnowballC)
+library(data.table)
+library(tidytext)
+library(dplyr)
+library(stringr)
+library(text2vec)
 
 strURL<-"https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip"
 strZIPFile<-"dataCapstone.zip"
@@ -36,26 +43,60 @@ if(!dir.exists(strDir)){
   unzip(strZIPFile)
 }
 
-txt <- system.file("texts", "txt", package = "tm")
-(ovid <- Corpus(DirSource(txt),
-                 readerControl = list(reader = readPlain,
-                                        language = "la",
-                                        load = TRUE)))
+fileBlogsEn<-file(strFileEnglishBlogs)
+linesBlogsEn<-readLines(fileBlogsEn)
+close(fileBlogsEn)
 
+fileBlogsEn<-file(strFileEnglishBlogs)
+linesBlogsEn<-readLines(fileBlogsEn)
+close(fileBlogsEn)
 
-ovid <- appendMeta(ovid,
-                    cmeta = list(test = c(1,2,3)),
-                    dmeta = list(clust = c(1,1,2,2,2)))
+fileBlogsEn<-file(strFileEnglishBlogs)
+linesBlogsEn<-readLines(fileBlogsEn)
+close(fileBlogsEn)
 
-reut21578 <- system.file("texts", "crude", package = "tm")
-reuters <- Corpus(DirSource(reut21578),readerControl = list(reader = readReut21578XML))
+set.seed(33234)
+linesBlogsEn<-sample(linesBlogsEn,50000)
 
-clean.corpus<-function(corpus){
-  corpus <- tm_map(corpus, content_transformer(tolower))
-  corpus <- tm_map(corpus, removeWords,
-                   stopwords('english'))
-  corpus <- tm_map(corpus, removePunctuation)
-  corpus <- tm_map(corpus, stripWhitespace)
-  corpus <- tm_map(corpus, removeNumbers)
-  return(corpus)
-}
+dataf<-data.table(text=linesBlogsEn)
+
+dataf$text<-removeWords(dataf$text,stopwords('en'))
+dataf$text<-str_remove_all(dataf$text,"–")
+dataf$text<-str_remove_all(dataf$text,"-")
+dataf$text<-str_remove_all(dataf$text,"“")
+dataf$text<-str_remove_all(dataf$text,"”")
+dataf$text<- removePunctuation(dataf$text)
+dataf$text<- stripWhitespace(dataf$text)
+dataf$text<- removeNumbers(dataf$text)
+dataf$text<- tolower(dataf$text)
+
+#tokens <- strsplit(dataf$text, split = " ",
+#                   fixed = T)
+
+tokens = space_tokenizer(dataf$text)
+
+#vocab <- create_vocabulary(itoken(tokens),ngram = c(1,1))
+
+vocabbigram <- create_vocabulary(itoken(tokens),ngram = c(3,3))
+
+vocab<- prune_vocabulary(vocabbigram, term_count_min = 5)
+
+iter <- itoken(tokens)
+
+vectorizer <- vocab_vectorizer(vocab)
+tcm <- create_tcm(iter, vectorizer)
+dtm <- create_dtm(iter, vectorizer)
+
+glove <- GlobalVectors$new(rank = 50, x_max = 10)
+
+wv_main<-glove$fit_transform(tcm, n_iter=30, convergence_tol = 0.01, n_threads = 8)
+
+wv_context<-glove$components
+
+word_vectors<-wv_main +t(wv_context)
+
+holy<-word_vectors["fish",,drop=FALSE]
+ghost<-word_vectors["love",,drop=FALSE]
+to<-word_vectors["to",,drop=FALSE]
+cos_sim<-sim2(x=word_vectors,y=(holy),method="cosine",norm="l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 50)
