@@ -34,3 +34,16 @@ selectNA<-rbinom(dim(training)[1],size = 1,prob = 0.05)==1
 training$capAVe[selectNA]<-NA
 preObj<-preProcess(training[,-58],method = "knnImpute")
 capAve<-predict(preObj,training[,-58])
+
+
+library(ElemStatLearn)
+data(ozone)
+ozone<-ozone[order(ozone$ozone),]
+ll<-matrix(NA,nrow=10,ncol=155)
+for(i in 1:10){
+  ss<-sample(1:dim(ozone)[1],replace = T)
+  ozone0<-ozone[ss,]
+  ozone0<-ozone0[order(ozone0$ozone),]
+  loess0<-loess(temperature~ozone,data=ozone0,span=0.2)
+  ll[i,]<-predict(loess0,newdata=data.frame(ozone=1:155))
+}

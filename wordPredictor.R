@@ -43,63 +43,12 @@ vocab1gram<-data.table(vocab1gram)
 setkey(vocab1gram,term)
 setindex(vocab1gram,term_count)
 
-example<-"cream cheese wit"
-
-tokensEx<-getTokens(str_trim(example))
-
-wordFound="ss"
-
-beginingWord<-isBeginingWord(example)
-
-if(beginingWord && length(tokensEx[[1]])>=2){
-  wordFound=findTrigramWord(markovNet3Gram,tokensEx[[1]])
-  if(nrow(wordFound)==0){
-    wordFound=findBigramWord(markovNet2Gram,tokensEx[[1]])
-  }
-}
-
-if(!beginingWord &&  length(tokensEx[[1]])>=2){
-  lenghtList<-length(tokensEx[[1]])
-  wordsToProcess<-findBigramWordIndexes(markovNet2Gram,tokensEx[[1]],number=500,lenghtList-1)
-  if(nrow(wordsToProcess)!=0){
-    stringDistances<-stringdist(tokensEx[[1]][lenghtList],wordsToProcess$bigram,method="dl")
-    wordFound<-wordsToProcess[order(stringDistances)]
-  }
-}
-
-
-
-findTrigramWord<-function(markovNet3Gram,tokensEx,number=10){
-  lenghtList<-length(tokensEx)
-  findTrigramWordIndexes(markovNet3Gram,tokensEx,number=10,lenghtList-1,lenghtList)
-}
-
-findTrigramWordIndexes<-function(markovNet3Gram,tokensEx,number=10,indexWord1,indexWord2){
-  wordsFound<-markovNet3Gram[unigram==tokensEx[indexWord1] & bigram==tokensEx[indexWord2],.(trigram,ptrigram), keyby=.(-ptrigram)]
-  head(wordsFound,number)
-}
-
-findBigramWord<-function(markovNet2Gram,tokensEx,number=10){
-  lenghtList<-length(tokensEx)
-  findBigramWordIndexes(markovNet2Gram,tokensEx,number=10,lenghtList)
-}
-
-findBigramWordIndexes<-function(markovNet2Gram,tokensEx,number=10,indexWord1){
-  wordsFound<-markovNet2Gram[unigram==tokensEx[indexWord1],.(bigram,pbigram), keyby=.(-pbigram)]
-  head(wordsFound,number)  
-}
-
-isBeginingWord<-function(stringToProcess){
-  wordLength<-nchar(stringToProcess)
-  str_sub(example,wordLength)==" "
-}
-
-getTokens<-function(stringToProcess){
-  tempTable<-data.table(text=stringToProcess)
-  stringCleaned<-cleanText(tempTable)
-  tokens<-space_tokenizer(stringCleaned)
-  tokens
-}
+save(markovNet2Gram, file = "MarkovNetworkBiGram.RData")
+saveRDS(markovNet2Gram,file = "MarkovNetworkBiGram.RDS")
+saveRDS(markovNet3Gram,file = "MarkovNetworkTriGram.RDS")
+save(markovNet3Gram, file = "MarkovNetworkTriGram.RData")
+save(vocab1gram, file = "MarkovNetworkUniGram.RData")
+saveRDS(vocab1gram,file = "MarkovNetworkUniGram.RDS")
 
 
 ##WordDistance
